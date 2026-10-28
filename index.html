@@ -36,7 +36,7 @@ header p{margin:6px 0 0;font-size:15px;color:#D6E0EE;line-height:1.6;max-width:8
 .run input{flex:1;accent-color:#00316B;min-width:140px}
 .run output{font-size:13px;color:var(--muted);min-width:170px}
 .btn{border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:14px;cursor:pointer}
-.btn.pri{white-space:nowrap;background:#FFD400;border-color:#FFD400;color:#00316B;font-weight:700}
+.btn.pri{white-space:nowrap;min-width:96px;background:#FFD400;border-color:#FFD400;color:#00316B;font-weight:700}
 .acts{display:flex;gap:8px}
 :is(.seg button,.btn,.nl,.go,.ls,.lk,summary,.x):focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .legend{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:0 0 10px;line-height:1.6}
@@ -159,6 +159,18 @@ aside.open{display:block}}
 .tabs [role=tab]:hover{color:var(--ink)}
 .tabs [role=tab][aria-selected=true]{background:var(--bg);color:var(--ink);font-weight:700;border-color:var(--border);box-shadow:inset 0 3px 0 #FFD400}
 .tabs [role=tab]:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.tl{display:flex;gap:14px;margin:0 0 12px;flex-wrap:wrap}
+.tg{flex:1 1 380px;min-width:0}
+.tgl{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.tg.act .tgl{color:var(--ink)}
+.cells{display:flex;gap:3px}
+.tc{flex:1 1 0;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11.5px;padding:5px 2px;border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:4px;cursor:pointer}
+.tc.done{background:var(--tint);color:var(--ink)}
+.tc.cur{background:#FFD400;border-color:#FFD400;color:#00316B;font-weight:700}
+.tc:focus-visible{outline:3px solid var(--ink);outline-offset:1px}
+.nl.in.now{background:color-mix(in srgb,#FFD400 45%,transparent);font-weight:700}
+.nl.in.now .no,.nl.in.now .lt,.nl.in.now .tt{color:#00316B}
+.gh.cl.act{background:#FFD400;color:#00316B}
 .pintro{margin:0 0 14px;font-size:15px;color:var(--muted);line-height:1.6;max-width:90ch}
 </style>
 </head>
@@ -186,9 +198,10 @@ aside.open{display:block}}
 <h2 class="sr-only">Interactive neural network map linking Class 1 and Class 2 Odia textbook lessons to the Sambhabana Part 1 booklet</h2>
 <div class="bar">
 <div class="seg" role="group" aria-label="ଶ୍ରେଣୀ ବାଛନ୍ତୁ"><button type="button" data-cls="all" aria-pressed="true">ଉଭୟ ଶ୍ରେଣୀ</button><button type="button" data-cls="1" aria-pressed="false">ପ୍ରଥମ ଶ୍ରେଣୀ</button><button type="button" data-cls="2" aria-pressed="false">ଦ୍ୱିତୀୟ ଶ୍ରେଣୀ</button></div>
-<div class="run"><button type="button" class="btn pri" id="play">ମାସ ଅନୁସାରେ ଚଲାନ୍ତୁ</button><input id="step" type="range" min="0" max="15" value="15" aria-label="ମାସ ସୁଦ୍ଧା"><output id="when" for="step"></output></div>
+<div class="run"><button type="button" class="btn pri" id="play">▶ Play</button><input id="step" type="range" min="0" max="15" value="15" aria-label="ମାସ ସୁଦ୍ଧା"><output id="when" for="step"></output></div>
 <div class="acts"><button type="button" class="btn" data-go="root">ପୁସ୍ତିକା ବିଷୟରେ</button><button type="button" class="btn" id="clear">ସମଗ୍ର ନେଟୱର୍କ</button></div>
 </div>
+<div class="tl" id="tl" aria-label="ମାସ ସମୟରେଖା"></div>
 <div class="legend" id="legend"></div>
 <div class="netbox"><div class="scroll"><div id="net"><svg id="wires" aria-hidden="true"></svg><div id="labels"></div></div></div></div>
 <section class="loop" aria-labelledby="lph">
@@ -346,6 +359,8 @@ const clsList=()=>CL==='all'?[1,2]:[+CL];
 const visLes=l=>CL==='all'||l.cls===+CL;
 function setSteps(){STEPS=[];clsList().forEach(c=>{for(let m=1;m<=8;m++)STEPS.push({c,m})});K=STEPS.length-1;
 const r=document.getElementById('step');r.max=K;r.value=K}
+const running=()=>!!timer||K<STEPS.length-1;
+const nowL=l=>{const s=STEPS[K];return running()&&l.cls===s.c&&l.mi===s.m};
 const taught=l=>{const s=STEPS[K];return l.cls<s.c||(l.cls===s.c&&l.mi<=s.m)};
 function acts(){const A={};
 TK.forEach(t=>{let tot=0,on=0;LES.forEach(l=>{if(!visLes(l))return;const n=l.letters.filter(o=>o.t===t).length;tot+=n;if(taught(l))on+=n});A['T'+t]=tot?on/tot:null});
@@ -381,14 +396,14 @@ const ae=document.activeElement&&document.activeElement.closest&&document.active
 let h='';
 E.forEach(e=>{if(e.les&&!visLes(e.les))return;const p=P[e.a],q=P[e.b];if(!p||!q)return;
 if(e.lat){const on=R&&(e.a===focus||e.b===focus);h+=`<path class="lat" d="M${p.x+p.r} ${p.y} C${p.x+48} ${p.y},${q.x+48} ${q.y},${q.x+q.r} ${q.y}" stroke-opacity="${R&&!on?.15:.8}"/>`;return}
-const t=e.les?taught(e.les):true,rl=R&&R.has(e.a)&&R.has(e.b);
-let op=R?(rl?(t?.95:.35):.05):(t?(G[e.a].L===0?.5:.62):.13);
+const t=e.les?taught(e.les):true,rl=R&&R.has(e.a)&&R.has(e.b),nw=e.les&&nowL(e.les);
+let op=nw?.95:R?(rl?(t?.95:.35):.05):(t?(G[e.a].L===0?.5:.62):.13);
 const sw=G[e.a].L===0?Math.min(.8+.55*e.w,3.8):G[e.a].L===1?1+.9*e.w:1.3;
 const ax=p.x+p.r,bx=q.x-q.r,m=(ax+bx)/2;
-h+=`<path d="M${ax} ${p.y} C${m} ${p.y},${m} ${q.y},${bx} ${q.y}" fill="none" stroke="${e.col}" stroke-width="${sw}" stroke-opacity="${op}"${rl&&t?' class="flow"':t?'':' stroke-dasharray="3 4"'}/>`});
+h+=`<path d="M${ax} ${p.y} C${m} ${p.y},${m} ${q.y},${bx} ${q.y}" fill="none" stroke="${e.col}" stroke-width="${sw}" stroke-opacity="${op}"${(rl&&t)||nw?' class="flow"':t?'':' stroke-dasharray="3 4"'}/>`});
 Object.entries(P).forEach(([id,p])=>{const g=G[id],col=colOf(id),dm=R&&!R.has(id);
 const a=g.kind==='les'?(taught(LX[id])?1:0):A[id]!=null?A[id]:g.kind==='lv'?0:.2;
-h+=`<g class="nc${dm?' dm':''}" data-id="${id}">${id===focus?`<circle cx="${p.x}" cy="${p.y}" r="${p.r+5}" fill="none" stroke="#FFD400" stroke-width="3.5"/>`:''}
+h+=`<g class="nc${dm?' dm':''}" data-id="${id}">${g.kind==='les'&&nowL(LX[id])&&id!==focus?`<circle cx="${p.x}" cy="${p.y}" r="${p.r+4}" fill="none" stroke="#FFD400" stroke-width="3"/>`:''}${id===focus?`<circle cx="${p.x}" cy="${p.y}" r="${p.r+5}" fill="none" stroke="#FFD400" stroke-width="3.5"/>`:''}
 <circle cx="${p.x}" cy="${p.y}" r="${p.r}" fill="var(--surface)" stroke="${col}" stroke-width="${g.kind==='les'?1.6:2.4}"/>
 ${a>0?`<circle cx="${p.x}" cy="${p.y}" r="${g.kind==='les'?3:p.r-3.5}" fill="${col}" fill-opacity="${a}"/>`:''}
 ${g.kind==='lv'?`<text x="${p.x}" y="${p.y+4.5}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">${LVS[id]}</text>`:''}</g>`});
@@ -398,11 +413,11 @@ let L=`<div class="lh l0" style="left:12px;width:${Lo.X[0]-12}px"><b>ପାଠ�
 <div class="lh" style="left:${Lo.X[2]}px"><b>ପୁସ୍ତିକାର ଦକ୍ଷତା</b>ଲୁକ୍କାୟିତ ସ୍ତର ୨</div>
 <div class="lh" style="left:${Lo.X[3]}px"><b>ପରଖ ଦକ୍ଷତା</b>ଆଉଟପୁଟ୍ ସ୍ତର</div>
 <div class="lh" style="left:${Math.min(Lo.X[4],Lo.W-86)}px"><b><button type="button" data-go="lvl">ଶିକ୍ଷଣ ସ୍ତର</button></b>ମାନନିର୍ଦ୍ଧାରଣ</div>`;
-Lo.heads.forEach(hd=>{L+=`<button type="button" class="gh cl${cur===hd.id?' on':''}" data-go="${hd.id}" style="left:${Lo.X[0]-264}px;top:${hd.y}px">${CLS[hd.id[1]]}</button>`});
+Lo.heads.forEach(hd=>{const act=running()&&STEPS[K].c===+hd.id[1];L+=`<button type="button" class="gh cl${cur===hd.id?' on':''}${act?' act':''}" data-go="${hd.id}" style="left:${Lo.X[0]-264}px;top:${hd.y}px">${CLS[hd.id[1]]}${act?' – ଚାଲୁଛି':''}</button>`});
 ['p1','p2'].forEach((p,i)=>{L+=`<button type="button" class="gh pt${cur===p?' on':''}" data-go="${p}" style="left:${Lo.X[2]}px;top:${Lo.ph[i]-62}px">${N[p].t}</button>`});
 Object.entries(P).forEach(([id,p])=>{const g=G[id],on=id===focus?' on':'',dm=R&&!R.has(id)?' dm':'';
 if(g.kind==='les'){const l=LX[id],lt=l.letters.map(o=>o.x).join(' ');
-L+=`<button type="button" class="nl in${on}${dm}${taught(l)?'':' nt'}" data-id="${id}" style="left:${p.x-264}px;top:${p.y}px" title="${CLS[l.cls]}, ${l.full}: ${l.title} – ${l.letters.map(o=>o.x).join(', ')}"><span class="no">${l.no}</span><span class="tt">${l.short}</span><span class="lt">${lt}</span></button>`;return}
+L+=`<button type="button" class="nl in${on}${dm}${taught(l)?'':' nt'}${nowL(l)?' now':''}" data-id="${id}" style="left:${p.x-264}px;top:${p.y}px" title="${CLS[l.cls]}, ${l.full}: ${l.title} – ${l.letters.map(o=>o.x).join(', ')}"><span class="no">${l.no}</span><span class="tt">${l.short}</span><span class="lt">${lt}</span></button>`;return}
 let t='';
 if(g.kind==='type')t=TY[g.t]+pct(A[id]);
 else if(g.kind==='sec')t=sl(id)+pct(A[id]);
@@ -413,6 +428,8 @@ lab.innerHTML=L;
 if(ae){const b=lab.querySelector(`[data-id="${ae}"],[data-go="${ae}"]`);if(b)b.focus({preventScroll:true})}
 document.querySelectorAll('.ls').forEach(b=>b.classList.toggle('on',b.dataset.go===cur));
 const s=STEPS[K];document.getElementById('when').textContent=`${CLS[s.c]}, ${MONTHS[s.m]} ସୁଦ୍ଧା`;
+document.getElementById('tl').innerHTML=clsList().map(c=>`<div class="tg${s.c===c?' act':''}"><span class="tgl">${CLS[c]}</span><div class="cells">${STEPS.map((x,i)=>x.c===c?`<button type="button" class="tc${i<K?' done':i===K?' cur':''}" data-k="${i}" title="${CLS[c]}, ${MONTHS[x.m]}" aria-current="${i===K}">${MONTHS[x.m]}</button>`:'').join('')}</div></div>`).join('');
+if(timer){const nl=lab.querySelector('.nl.now');if(nl){const r=nl.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight-20)nl.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}}
 detail()}
 
 /* ---------- learning loop ---------- */
@@ -500,9 +517,13 @@ document.getElementById('clear').onclick=()=>{focus=null;cur='root';render()};
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{stop();CL=b.dataset.cls;document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));setSteps();render()});
 const stepEl=document.getElementById('step'),playEl=document.getElementById('play');
 stepEl.oninput=()=>{stop();K=+stepEl.value;render()};
-function stop(){if(timer){clearInterval(timer);timer=null;playEl.textContent='ମାସ ଅନୁସାରେ ଚଲାନ୍ତୁ'}}
-playEl.onclick=()=>{if(timer){stop();return}if(K>=STEPS.length-1)K=0;stepEl.value=K;render();playEl.textContent='ରୋକନ୍ତୁ';
-timer=setInterval(()=>{if(K>=STEPS.length-1){stop();return}K++;stepEl.value=K;render()},950)};
+function stop(){if(timer){clearTimeout(timer);timer=null;playEl.textContent='▶ Play';render()}}
+function tick(){if(K>=STEPS.length-1){stop();return}
+const change=STEPS[K+1].c!==STEPS[K].c;timer=setTimeout(()=>{K++;stepEl.value=K;render();tick()},change?1900:1000)}
+playEl.onclick=()=>{if(timer){stop();return}
+if(CL!=='all'){CL='all';document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cls==='all'));setSteps()}
+K=0;stepEl.value=K;playEl.textContent='❚❚ Pause';timer=-1;render();tick()};
+document.getElementById('tl').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;if(timer){clearTimeout(timer);timer=null;playEl.textContent='▶ Play'}K=+b.dataset.k;stepEl.value=K;render()});
 document.getElementById('legend').innerHTML=TK.map(t=>`<span><i style="background:var(--t${t})"></i>${TY[t]}</span>`).join('')+
 `<span><i style="background:var(--lang)"></i>ଭାଷା ଓ ସାକ୍ଷରତା</span><span><i style="background:var(--num)"></i>ସଂଖ୍ୟାଜ୍ଞାନ</span><span><span class="ln"></span>ପୂର୍ବାପେକ୍ଷିତ ଦକ୍ଷତା</span><span>ରେଖାର ମୋଟେଇ = ସଂଯୋଗର ଓଜନ</span><span>ନିଉରନ୍ ପୂରଣ = ମାସ ସୁଦ୍ଧା ପରିଚିତ ଲକ୍ଷ୍ୟ ଅକ୍ଷର %</span>`;
 setSteps();render();loopWires();
